@@ -1,0 +1,4 @@
+{
+  "terraform.experimentalFeatures.prefillRequiredFields": true,
+  "editor.suggest.preview": true
+}
