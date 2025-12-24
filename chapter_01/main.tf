@@ -1,4 +1,6 @@
 terraform {
+  required_version = ">= 1.12.0"
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -8,7 +10,7 @@ terraform {
 }
 
 provider "aws" {
-  region = "ca-central-1"
+  region  = "ca-central-1"
   profile = "vasile_tf_admin"
 }
 
@@ -17,7 +19,7 @@ data "aws_ami" "ubuntu" {
 
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"]
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
   }
 
   owners = ["099720109477"]
