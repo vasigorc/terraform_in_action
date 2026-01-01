@@ -62,7 +62,7 @@ data "aws_ami" "ubuntu" {
   most_recent = true
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-noble-24.04-amd64-server-*"]
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
   }
   owners = ["099720109477"] // Canonical
 }
@@ -114,10 +114,11 @@ module "alb" {
   }
   target_groups = {
     ex-instance = {
-      name_prefix = "websvr"
-      protocol    = "HTTP"
-      port        = 8080
-      target_type = "instance"
+      name_prefix        = "websvr"
+      protocol           = "HTTP"
+      port               = 8080
+      target_type        = "instance"
+      create_attachment  = false  # ASG handles attachment via target_group_arns
     }
   }
 }
