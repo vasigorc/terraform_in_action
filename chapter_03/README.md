@@ -5,6 +5,7 @@
 **Terraform configurations become reusable and maintainable through variables, locals, built-in functions, and meta-arguments like `count`.**
 
 This chapter demonstrates how to:
+
 - Accept structured input via **variables** with validation
 - Transform data with **locals** and built-in functions
 - Create multiple similar resources using the **count** meta-argument
@@ -57,12 +58,14 @@ variable "num_files" {
 ```
 
 **Key Features:**
+
 - **Complex type:** `object` with nested `list()` types for structured data
 - **Validation:** Enforces business rules (minimum 10 nouns)
 - **Default values:** `num_files` has a sensible default
 - **Type safety:** Terraform validates types before execution
 
 **Supplied via `terraform.tfvars`:**
+
 ```hcl
 words = {
   nouns = ["army", "panther", "walnuts", "sandwich", "apples", "banana",
@@ -84,6 +87,7 @@ locals {
 ```
 
 **What's Happening:**
+
 - **`uppercase_words`:** Uses a **for expression** to transform all words to uppercase
   - Outer loop: iterates over map keys (`nouns`, `adjectives`, etc.)
   - Inner loop: transforms each string in the list with `upper()`
@@ -93,6 +97,7 @@ locals {
   - Enables dynamic template discovery without hardcoding filenames
 
 **Why Locals?**
+
 - Avoids repeating complex expressions
 - Makes configuration DRY (Don't Repeat Yourself)
 - Computed values that don't need to be exposed as variables
@@ -113,6 +118,7 @@ resource "random_shuffle" "random_adjectives" {
 ```
 
 **Key Points:**
+
 - **`count` creates 100 instances** of each resource type (one per Mad Lib file)
 - Each instance is indexed: `random_shuffle.random_nouns[0]`, `random_shuffle.random_nouns[1]`, etc.
 - The `random_shuffle` resource randomizes the order of input list
@@ -121,6 +127,7 @@ resource "random_shuffle" "random_adjectives" {
 ### 4. Template Rendering with `templatefile()`
 
 **Template Example (`templates/alice.txt`):**
+
 ```text
 ALICE'S UPSIDE-DOWN WORLD
 
@@ -131,6 +138,7 @@ ${numbers[0]} years...
 ```
 
 **Resource Using Template:**
+
 ```hcl
 resource "local_file" "mad_libs" {
   count    = var.num_files
@@ -147,6 +155,7 @@ resource "local_file" "mad_libs" {
 ```
 
 **How It Works:**
+
 1. **`count.index`:** Special variable available inside `count` resources (0-99)
 2. **`element(list, index)`:** Cycles through templates (wraps around if index > list length)
 3. **`templatefile(path, vars)`:** Renders template with variable substitutions
@@ -166,6 +175,7 @@ data "archive_file" "mad_libs" {
 ```
 
 **Key Features:**
+
 - **`data` source:** Reads/computes data rather than creating infrastructure
 - **`depends_on`:** Explicit dependency ensures all 100 files are created first
 - **`path.module`:** Directory containing current module
@@ -181,6 +191,7 @@ tfiu  # terraform init -upgrade
 ```
 
 **Output:**
+
 ```
 Initializing provider plugins...
 - Finding hashicorp/local versions matching "~> 2.5"...
@@ -191,6 +202,7 @@ Terraform has been successfully initialized!
 ```
 
 **Providers Installed:**
+
 - `hashicorp/random` v3.7.2 - For shuffling word lists
 - `hashicorp/local` v2.6.1 - For creating text files
 - `hashicorp/archive` v2.7.1 - For creating ZIP archive
@@ -200,11 +212,13 @@ tfv  # terraform validate
 ```
 
 **Output:**
+
 ```
 Success! The configuration is valid.
 ```
 
 **Validation Checks:**
+
 - Syntax is correct
 - Variable types match declarations
 - All required variables have values (from `terraform.tfvars`)
@@ -217,6 +231,7 @@ tfa!  # terraform apply -auto-approve
 ```
 
 **What Happens:**
+
 1. **Creates 500 `random_shuffle` resources** (100 × 5 word types)
    - Each shuffles its input list into random order
 2. **Creates 100 `local_file` resources**
@@ -227,11 +242,13 @@ tfa!  # terraform apply -auto-approve
    - Packages all 100 files into `madlibs.zip`
 
 **Expected Output:**
+
 ```
 Apply complete! Resources: 601 added, 0 changed, 0 destroyed.
 ```
 
 **Result on Disk:**
+
 ```
 madlibs/
 ├── madlibs-0.txt
@@ -249,6 +266,7 @@ unzip -v madlibs.zip | head -n 10
 ```
 
 **Output:**
+
 ```
 Archive:  madlibs.zip
  Length   Method    Size  Cmpr    Date    Time   CRC-32   Name
@@ -263,11 +281,13 @@ Archive:  madlibs.zip
 ```
 
 **Success Indicators:**
+
 - 100 files present in archive
 - Files have varying sizes (different templates/content)
 - Compression working (Size < Length)
 
 **Sample Generated Content:**
+
 ```
 ALICE'S UPSIDE-DOWN WORLD
 
@@ -283,11 +303,13 @@ tfd!  # terraform destroy -auto-approve
 ```
 
 **Output:**
+
 ```
 Destroy complete! Resources: 601 destroyed.
 ```
 
 **What Gets Deleted:**
+
 - All 100 `madlibs/*.txt` files
 - The `madlibs/` directory
 - The `madlibs.zip` archive
@@ -295,6 +317,7 @@ Destroy complete! Resources: 601 destroyed.
 - All `local_file` resource state
 
 **What Remains:**
+
 - `.tf` configuration files
 - `terraform.tfvars`
 - `templates/*.txt` (source templates)
@@ -305,6 +328,7 @@ Destroy complete! Resources: 601 destroyed.
 ### Variables Enable Reusability
 
 **Without variables:**
+
 ```hcl
 resource "local_file" "example" {
   content = "Hello, World!"  # Hardcoded
@@ -312,6 +336,7 @@ resource "local_file" "example" {
 ```
 
 **With variables:**
+
 ```hcl
 variable "greeting" {
   type = string
@@ -323,22 +348,24 @@ resource "local_file" "example" {
 ```
 
 **Benefits:**
+
 - Same configuration works for different inputs
 - Easy to test (different `.tfvars` files for dev/staging/prod)
 - Validation ensures data quality
 
 ### Variable Types and Validation
 
-| Type | Example | Use Case |
-|------|---------|----------|
-| `string` | `"hello"` | Filenames, names, simple values |
-| `number` | `42` | Counts, sizes, ports |
-| `bool` | `true` | Feature flags, enable/disable |
-| `list(string)` | `["a", "b"]` | Multiple similar values |
-| `map(string)` | `{key = "val"}` | Key-value configuration |
-| `object({...})` | Structured data | Complex nested configuration |
+| Type            | Example         | Use Case                        |
+| --------------- | --------------- | ------------------------------- |
+| `string`        | `"hello"`       | Filenames, names, simple values |
+| `number`        | `42`            | Counts, sizes, ports            |
+| `bool`          | `true`          | Feature flags, enable/disable   |
+| `list(string)`  | `["a", "b"]`    | Multiple similar values         |
+| `map(string)`   | `{key = "val"}` | Key-value configuration         |
+| `object({...})` | Structured data | Complex nested configuration    |
 
 **Validation Example:**
+
 ```hcl
 validation {
   condition     = length(var.words["nouns"]) >= 10
@@ -347,20 +374,22 @@ validation {
 ```
 
 **Why Validate?**
+
 - Catch errors early (before API calls to cloud providers)
 - Enforce business rules
 - Provide clear error messages
 
 ### Locals vs Variables
 
-| Feature | Variables | Locals |
-|---------|-----------|--------|
-| **Input** | User-supplied | Computed from other values |
-| **Validation** | Yes | No (but can use precondition blocks) |
-| **DRY** | For external configuration | For internal expression reuse |
-| **When to use** | Parameterize config | Transform data, avoid repetition |
+| Feature         | Variables                  | Locals                               |
+| --------------- | -------------------------- | ------------------------------------ |
+| **Input**       | User-supplied              | Computed from other values           |
+| **Validation**  | Yes                        | No (but can use precondition blocks) |
+| **DRY**         | For external configuration | For internal expression reuse        |
+| **When to use** | Parameterize config        | Transform data, avoid repetition     |
 
 **Example:**
+
 ```hcl
 # Variable: user supplies this
 variable "environment" {
@@ -380,6 +409,7 @@ locals {
 ### The `count` Meta-Argument
 
 **Creates multiple instances of a resource:**
+
 ```hcl
 resource "aws_instance" "web" {
   count = 3
@@ -388,6 +418,7 @@ resource "aws_instance" "web" {
 ```
 
 **Referencing instances:**
+
 ```hcl
 # Single instance
 resource.type.name.attribute
@@ -398,6 +429,7 @@ resource.type.name[count.index].attribute  # Inside count block
 ```
 
 **When NOT to use `count`:**
+
 - If instances need different configurations (use `for_each` instead)
 - If order matters and items might be removed from middle (causes recreation)
 
@@ -405,20 +437,21 @@ resource.type.name[count.index].attribute  # Inside count block
 
 Terraform has 100+ built-in functions. Key ones from this chapter:
 
-| Function | Purpose | Example |
-|----------|---------|---------|
-| `upper(string)` | Convert to uppercase | `upper("hello")` → `"HELLO"` |
-| `length(list)` | Count items | `length([1,2,3])` → `3` |
-| `element(list, index)` | Get item (wraps) | `element([1,2], 5)` → `2` |
-| `fileset(path, pattern)` | Find files | `fileset(".", "*.txt")` → set of files |
-| `tolist(set)` | Convert set to list | `tolist(fileset(...))` |
-| `templatefile(path, vars)` | Render template | See template example above |
+| Function                   | Purpose              | Example                                |
+| -------------------------- | -------------------- | -------------------------------------- |
+| `upper(string)`            | Convert to uppercase | `upper("hello")` → `"HELLO"`           |
+| `length(list)`             | Count items          | `length([1,2,3])` → `3`                |
+| `element(list, index)`     | Get item (wraps)     | `element([1,2], 5)` → `2`              |
+| `fileset(path, pattern)`   | Find files           | `fileset(".", "*.txt")` → set of files |
+| `tolist(set)`              | Convert set to list  | `tolist(fileset(...))`                 |
+| `templatefile(path, vars)` | Render template      | See template example above             |
 
 **Documentation:** [Terraform Functions Reference](https://developer.hashicorp.com/terraform/language/functions)
 
 ### For Expressions
 
 **List transformation:**
+
 ```hcl
 [for s in var.list : upper(s)]
 # Input:  ["a", "b", "c"]
@@ -426,6 +459,7 @@ Terraform has 100+ built-in functions. Key ones from this chapter:
 ```
 
 **Map transformation:**
+
 ```hcl
 {for k, v in var.map : k => upper(v)}
 # Input:  {name = "alice", city = "nyc"}
@@ -433,6 +467,7 @@ Terraform has 100+ built-in functions. Key ones from this chapter:
 ```
 
 **Nested iteration (from this chapter):**
+
 ```hcl
 { for k, v in var.words : k => [for s in v : upper(s)] }
 # Input:  {nouns = ["cat", "dog"], verbs = ["run", "jump"]}
@@ -442,6 +477,7 @@ Terraform has 100+ built-in functions. Key ones from this chapter:
 ### Template Files
 
 **Pattern:**
+
 ```hcl
 # Template file: greeting.tpl
 Hello, ${name}! You are ${age} years old.
@@ -457,12 +493,14 @@ templatefile("greeting.tpl", {
 ```
 
 **Advanced - accessing list items in templates:**
+
 ```hcl
 ${adjectives[0]}  # First adjective
 ${nouns[2]}       # Third noun
 ```
 
 **Use cases:**
+
 - User data scripts for EC2 instances
 - Configuration files (nginx.conf, etc.)
 - HTML/email templates
@@ -471,6 +509,7 @@ ${nouns[2]}       # Third noun
 ### Explicit Dependencies with `depends_on`
 
 **Terraform auto-detects dependencies:**
+
 ```hcl
 resource "aws_instance" "web" {
   subnet_id = aws_subnet.main.id  # Implicit dependency
@@ -478,6 +517,7 @@ resource "aws_instance" "web" {
 ```
 
 **Sometimes you need explicit dependencies:**
+
 ```hcl
 data "archive_file" "mad_libs" {
   depends_on = [local_file.mad_libs]  # Explicit dependency
@@ -487,11 +527,13 @@ data "archive_file" "mad_libs" {
 ```
 
 **Why explicit here?**
+
 - Archive reads from filesystem, not Terraform attributes
 - Terraform can't auto-detect that archive needs files to exist first
 - `depends_on` forces correct ordering
 
 **When to use `depends_on`:**
+
 - Side effects not visible in resource attributes
 - Ensuring order when auto-detection fails
 - Workarounds for provider bugs
@@ -500,14 +542,15 @@ data "archive_file" "mad_libs" {
 
 ### Data Sources vs Resources
 
-| | Resource | Data Source |
-|---|----------|-------------|
-| **Keyword** | `resource` | `data` |
-| **Purpose** | Create/manage infrastructure | Read existing data |
-| **State** | Tracked and managed | Read-only |
+|             | Resource                        | Data Source               |
+| ----------- | ------------------------------- | ------------------------- |
+| **Keyword** | `resource`                      | `data`                    |
+| **Purpose** | Create/manage infrastructure    | Read existing data        |
+| **State**   | Tracked and managed             | Read-only                 |
 | **Example** | `resource "aws_instance" "web"` | `data "aws_ami" "ubuntu"` |
 
 **From this chapter:**
+
 ```hcl
 # Resource: Creates files
 resource "local_file" "mad_libs" { ... }
@@ -517,6 +560,7 @@ data "archive_file" "mad_libs" { ... }
 ```
 
 **Common data sources:**
+
 - `data "aws_ami"` - Find latest AMI
 - `data "aws_availability_zones"` - List AZs in region
 - `data "terraform_remote_state"` - Read another workspace's outputs
@@ -527,6 +571,7 @@ data "archive_file" "mad_libs" { ... }
 ### Variable File Organization
 
 **For learning (this repo):**
+
 ```
 chapter_03/
 ├── madlibs.tf
@@ -534,6 +579,7 @@ chapter_03/
 ```
 
 **For production:**
+
 ```
 infrastructure/
 ├── variables.tf       # Variable declarations only
@@ -544,6 +590,7 @@ infrastructure/
 ```
 
 **Apply with:**
+
 ```bash
 terraform apply -var-file=terraform.tfvars -var-file=secrets.tfvars
 ```
@@ -551,6 +598,7 @@ terraform apply -var-file=terraform.tfvars -var-file=secrets.tfvars
 ### Environment-Specific Configurations
 
 **Pattern 1: Separate .tfvars files**
+
 ```
 ├── dev.tfvars
 ├── staging.tfvars
@@ -560,7 +608,8 @@ terraform apply -var-file=terraform.tfvars -var-file=secrets.tfvars
 terraform apply -var-file=prod.tfvars
 ```
 
-**Pattern 2: Separate directories (Shopify-style)**
+**Pattern 2: Separate directories**
+
 ```
 ├── modules/           # Reusable modules
 │   └── app/
@@ -598,6 +647,7 @@ variable "environment" {
 ```
 
 **Why validate?**
+
 - Prevent typos (`prodction` instead of `production`)
 - Enforce naming conventions
 - Catch misconfigurations before expensive API calls
@@ -607,6 +657,7 @@ variable "environment" {
 ### 1. Count Index Shift
 
 **Problem:**
+
 ```hcl
 resource "aws_instance" "web" {
   count = 3
@@ -620,6 +671,7 @@ resource "aws_instance" "web" {
 **Why?** Count uses numeric indices. Removing from middle causes shift.
 
 **Solution:** Use `for_each` with map/set for stable identifiers:
+
 ```hcl
 resource "aws_instance" "web" {
   for_each = toset(["web1", "web2", "web3"])
@@ -631,6 +683,7 @@ resource "aws_instance" "web" {
 ### 2. Variable Type Mismatches
 
 **Error:**
+
 ```hcl
 variable "ports" {
   type = list(number)
@@ -641,6 +694,7 @@ ports = ["80", "443"]  # ERROR: strings, not numbers
 ```
 
 **Fix:**
+
 ```hcl
 ports = [80, 443]  # Correct: numbers
 ```
@@ -648,6 +702,7 @@ ports = [80, 443]  # Correct: numbers
 ### 3. Circular Dependencies
 
 **Problem:**
+
 ```hcl
 resource "a" "example" {
   value = b.example.output
@@ -665,39 +720,13 @@ resource "b" "example" {
 
 From the exercise (Oh My Zsh terraform plugin):
 
-| Alias   | Full Command                     | Description                                 |
-|---------|----------------------------------|---------------------------------------------|
-| `tfiu`  | `terraform init -upgrade`        | Initialize and upgrade providers            |
-| `tfv`   | `terraform validate`             | Validate configuration syntax               |
-| `tfa!`  | `terraform apply -auto-approve`  | Apply without confirmation                  |
-| `tfd!`  | `terraform destroy -auto-approve`| Destroy without confirmation                |
-| `gst`   | `git status`                     | Check git status (Oh My Zsh git plugin)     |
-
-## Cost Considerations
-
-**This chapter uses only local resources - $0.00 AWS cost!**
-
-| Resource | Cost |
-|----------|------|
-| `random_shuffle` | Free (logical provider, no API calls) |
-| `local_file` | Free (local filesystem) |
-| `archive_file` | Free (local filesystem) |
-
-**Learning:** Practice Terraform patterns without spending money. When moving to cloud resources:
-- Always check provider costs before `apply`
-- Use `terraform plan` to estimate resource counts
-- Destroy resources immediately after testing
-- Set up billing alerts
-
-## Next Steps
-
-**Chapter 4** will introduce:
-- **Modules** for organizing and reusing configurations
-- **Module composition** patterns
-- **Input variables and outputs** for modules
-- When to extract code into modules vs keeping inline
-
-**Key Takeaway:** Variables, locals, functions, and `count` transform static configurations into dynamic, reusable infrastructure code. Master these fundamentals before diving into modules - they're the building blocks of maintainable Terraform.
+| Alias  | Full Command                      | Description                             |
+| ------ | --------------------------------- | --------------------------------------- |
+| `tfiu` | `terraform init -upgrade`         | Initialize and upgrade providers        |
+| `tfv`  | `terraform validate`              | Validate configuration syntax           |
+| `tfa!` | `terraform apply -auto-approve`   | Apply without confirmation              |
+| `tfd!` | `terraform destroy -auto-approve` | Destroy without confirmation            |
+| `gst`  | `git status`                      | Check git status (Oh My Zsh git plugin) |
 
 ## Further Reading
 
@@ -710,6 +739,7 @@ From the exercise (Oh My Zsh terraform plugin):
 ---
 
 **Exercise Summary:**
+
 - **Resources Created:** 601 (500 random_shuffle + 100 local_file + 1 archive_file)
 - **Lines of Terraform:** ~82
 - **Lines of Output:** 100 Mad Libs files + 1 ZIP archive
