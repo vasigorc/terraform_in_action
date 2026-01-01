@@ -4,7 +4,7 @@ resource "random_password" "password" {
   override_special = "_%@/'\""
 }
 
-resource "aws_db_instance" "name" {
+resource "aws_db_instance" "database" {
   instance_class         = "db.t2.micro"
   allocated_storage      = 10
   engine                 = "mysql"

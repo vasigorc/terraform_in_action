@@ -1,8 +1,8 @@
 resource "aws_iam_role" "webserver" {
   name_prefix = "${var.namespace}-webserver-"
-  description = "IAM role for web server iinstances"
+  description = "IAM role for web server instances"
 
-  assume_role_policy = jsondecode({
+  assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
       Action = "sts:AssumeRole"
@@ -14,7 +14,7 @@ resource "aws_iam_role" "webserver" {
   })
 
   tags = {
-    Name = "S{var.namespace}-webserver-role"
+    Name = "${var.namespace}-webserver-role"
   }
 }
 
@@ -23,8 +23,8 @@ resource "aws_iam_role_policy" "webserver" {
   name_prefix = "${var.namespace}-webserver-policy-"
   role        = aws_iam_role.webserver.id
 
-  policy = jsondecode({
-    Version : "2012-10-17"
+  policy = jsonencode({
+    Version = "2012-10-17"
     Statement = [{
       Effect   = "Allow"
       Action   = ["logs:*"]
@@ -82,10 +82,10 @@ resource "aws_launch_template" "webserver" {
 
 resource "aws_autoscaling_group" "webserver" {
   name                = "${var.namespace}-asg"
-  max_size            = 1
-  min_size            = 3
+  min_size            = 1
+  max_size            = 3
   vpc_zone_identifier = var.vpc.private_subnets
-  target_group_arns   = module.alb.target_group_arns
+  target_group_arns   = [for tg in module.alb.target_groups : tg.arn]
   launch_template {
     id      = aws_launch_template.webserver.id
     version = aws_launch_template.webserver.latest_version

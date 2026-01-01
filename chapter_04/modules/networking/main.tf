@@ -15,43 +15,39 @@ module "vpc" {
 }
 
 resource "aws_security_group" "lb" {
-  name_prefix = var.namespace
+  name_prefix = "${var.namespace}-lb-"
   description = "Security group for load balancer"
   vpc_id      = module.vpc.vpc_id
-
-  ingress = {
-    description = "HTTP from internet"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress = {
-    description = "Allow all outbound"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
 
   tags = {
     Name = "${var.namespace}-lb-sg"
   }
 }
 
+resource "aws_security_group_rule" "lb_http_ingress" {
+  type              = "ingress"
+  description       = "HTTP from internet"
+  from_port         = 80
+  to_port           = 80
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.lb.id
+}
+
+resource "aws_security_group_rule" "lb_egress" {
+  type              = "egress"
+  description       = "Allow all outbound"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.lb.id
+}
+
 resource "aws_security_group" "websvr" {
   name_prefix = "${var.namespace}-websvr-"
   description = "Security group for web servers"
   vpc_id      = module.vpc.vpc_id
-
-  ingress = {
-    description     = "HTTP from load balancer"
-    from_port       = 8080
-    to_port         = 8080
-    protocol        = "tcp"
-    security_groups = [aws_security_group.lb.id]
-  }
 
   tags = {
     Name = "${var.namespace}-websvr-sg"
