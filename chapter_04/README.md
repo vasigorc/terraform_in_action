@@ -293,6 +293,8 @@ resource "aws_autoscaling_group" "app" {
 
 **Lesson learned:** Module v9.x changed target attachment behavior. Setting `create_attachment = false` prevents the module from trying to manually attach instances, allowing the ASG to handle it automatically.
 
+**Critical for IaC:** Always explicitly configure safety features like `enable_deletion_protection = false` for dev/learning environments. Community modules often default to production-safe settings (deletion protection enabled), which require manual intervention to destroy if not overridden in code. Everything should be declarative—no AWS CLI/Console workarounds.
+
 ### 6. Cost-Conscious Decisions
 
 **Single NAT Gateway vs. Multi-AZ:**
@@ -423,6 +425,7 @@ target_groups = {
 6. **Security groups should use separate rule resources** for modern AWS provider compatibility
 7. **Cost optimization matters** even in learning environments (single NAT vs. multi-AZ)
 8. **AWS compatibility evolves** - older instance types may not support newer software versions
+9. **Everything must be in code** - deletion protection and other safety features should be explicitly configured in `.tf` files, not managed manually via AWS CLI/Console. Infrastructure as Code means ALL infrastructure configuration is declarative.
 
 ## Next Steps
 

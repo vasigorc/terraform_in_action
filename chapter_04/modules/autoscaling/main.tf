@@ -101,6 +101,7 @@ module "alb" {
   vpc_id             = var.vpc.vpc_id
   subnets            = var.vpc.public_subnets
   security_groups    = [var.sg.lb]
+  enable_deletion_protection = false  # Allow easy cleanup for learning environment
   listeners = {
     ex-http = {
       port     = 80
