@@ -4,8 +4,8 @@ output "vpc" {
 
 output "sg" {
   value = {
-    lib    = module.lb_sg.security_group.id
-    db     = module.db_sg.security_group.id
-    websvr = module.websvr_sg.security_group.id
+    lib    = aws_security_group.lb.id
+    db     = aws_security_group.db.id
+    websvr = aws_security_group.websvr.id
   }
 }

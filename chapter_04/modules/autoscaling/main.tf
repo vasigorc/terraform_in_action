@@ -17,12 +17,10 @@ data "cloudinit_config" "config" {
 data "aws_ami" "ubuntu" {
   most_recent = true
   filter {
-    name = "name"
-    // using a 20.04 LTS for a free tier
-    values = ["ubuntu/images/hvm-ssd/ubuntu-focal-20.04-arm64-server-*"]
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-noble-24.04-amd64-server-*"]
   }
-  // unique identifier for Canonical
-  owners = ["099720109477"]
+  owners = ["099720109477"] // Canonical
 }
 
 // allows for multiple versions of a launch template configuration
