@@ -5,3 +5,5 @@ terraform.tfstate.backup
 
 madlibs
 madlibs.zip
+
+*.tfplan

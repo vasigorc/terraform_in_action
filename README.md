@@ -12,6 +12,26 @@ This repository contains hands-on exercises and examples from the book "Terrafor
 - 🔄 Chapter 4: In progress (modules and composition)
 - 📚 Chapters 5+: Upcoming (multi-env, remote state, testing)
 
+## Remarks on Differences from Book
+
+This repository contains intentional differences from the original book's code examples:
+
+1. **Updated Provider Versions:** All provider version constraints have been updated to reflect the state of Terraform and providers at the beginning of 2026 (Terraform ~> 1.12, AWS provider ~> 5.0+), rather than the versions used in the original book publication.
+
+2. **Generic Modules and Resources:** Where possible, author-provided `terraform-in-action/*` modules from the Terraform Registry have been replaced with:
+   - Official `terraform-aws-modules/*` modules from the community
+   - Native AWS resources (`aws_security_group`, `aws_security_group_rule`, etc.)
+   - Data sources for referencing existing infrastructure
+
+   This approach provides better educational value, reproducibility, security, and long-term maintainability.
+
+3. **AWS-Only Examples:** All examples in this repository explicitly use the AWS cloud provider. While the book includes examples for Azure and GCP, this repository focuses exclusively on AWS to:
+   - Narrow the scope of billing alerts to configure and monitor
+   - Leverage an existing AWS account and established expertise
+   - Maintain consistency across all learning exercises
+
+4. **Updated OS Images and Database Versions:** Where applicable, operating system AMIs and database engine versions have been upgraded to current LTS/stable releases (e.g., Ubuntu 22.04 LTS instead of 20.04, MySQL 8.0 instead of 5.7) while maintaining compatibility with free tier instance classes to reflect modern infrastructure practices and security requirements.
+
 ## Prerequisites
 
 - **Terraform:** v1.12.0+ ([download](https://www.terraform.io/downloads))
