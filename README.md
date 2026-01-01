@@ -30,7 +30,7 @@ This repository contains intentional differences from the original book's code e
    - Leverage an existing AWS account and established expertise
    - Maintain consistency across all learning exercises
 
-4. **Updated OS Images and Database Versions:** Where applicable, operating system AMIs and database engine versions have been upgraded to current LTS/stable releases (e.g., Ubuntu 24.04 LTS instead of 20.04, MySQL 8.4 instead of 8.0) to reflect modern infrastructure practices and security requirements.
+4. **Updated OS Images and Database Versions:** Where applicable, operating system AMIs and database engine versions have been upgraded to current LTS/stable releases (e.g., Ubuntu 22.04 LTS instead of 20.04, MySQL 8.0 instead of 5.7) while maintaining compatibility with free tier instance classes to reflect modern infrastructure practices and security requirements.
 
 ## Prerequisites
 
