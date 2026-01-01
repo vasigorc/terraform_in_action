@@ -11,7 +11,9 @@ module "vpc" {
   database_subnets             = ["10.0.21.0/24", "10.0.22.0/24", "10.0.23.0/24"]
   create_database_subnet_group = true
   enable_nat_gateway           = true
-  single_nat_gateway           = false
+  # For production multi-AZ high availability, set single_nat_gateway = false (creates one NAT per AZ, ~$97/mo)
+  # For learning/cost savings, use single NAT gateway (~$32/mo)
+  single_nat_gateway           = true
 }
 
 resource "aws_security_group" "lb" {
