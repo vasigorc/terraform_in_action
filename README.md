@@ -8,9 +8,9 @@ This repository contains hands-on exercises and examples from the book "Terrafor
 
 **Current Status:**
 
-- ✅ Chapters 1-3: Completed (basic workflow, resources, state)
-- 🔄 Chapter 4: In progress (modules and composition)
-- 📚 Chapters 5+: Upcoming (multi-env, remote state, testing)
+- ✅ Chapters 1-4: Completed (workflow, resources, state, modules)
+- 🔄 Chapter 5: Next (managing multiple environments)
+- 📚 Chapters 6+: Upcoming (remote state, testing, team workflows)
 
 ## Remarks on Differences from Book
 
@@ -30,7 +30,7 @@ This repository contains intentional differences from the original book's code e
    - Leverage an existing AWS account and established expertise
    - Maintain consistency across all learning exercises
 
-4. **Updated OS Images and Database Versions:** Where applicable, operating system AMIs and database engine versions have been upgraded to current LTS/stable releases (e.g., Ubuntu 22.04 LTS instead of 20.04, MySQL 8.0 instead of 5.7) while maintaining compatibility with free tier instance classes to reflect modern infrastructure practices and security requirements.
+4. **Updated OS Images and Database Versions:** Where applicable, operating system AMIs and database engine versions have been upgraded to current LTS/stable releases (e.g., Ubuntu 22.04 LTS instead of 20.04) while maintaining compatibility with free tier instance classes to reflect modern infrastructure practices and security requirements.
 
 ## Prerequisites
 
