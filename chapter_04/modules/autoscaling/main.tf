@@ -1,6 +1,50 @@
-module "iam_instance_profile" {
-  source  = "terraform-in-action/iip/aws"
-  actions = ["logs:*", "rds:*"]
+resource "aws_iam_role" "webserver" {
+  name_prefix = "${var.namespace}-webserver-"
+  description = "IAM role for web server iinstances"
+
+  assume_role_policy = jsondecode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "ec2.amazonaws.com"
+      }
+    }]
+  })
+
+  tags = {
+    Name = "S{var.namespace}-webserver-role"
+  }
+}
+
+# Inline policy that grants CW Logs and RDS permissions
+resource "aws_iam_role_policy" "webserver" {
+  name_prefix = "${var.namespace}-webserver-policy-"
+  role        = aws_iam_role.webserver.id
+
+  policy = jsondecode({
+    Version : "2012-10-17"
+    Statement = [{
+      Effect   = "Allow"
+      Action   = ["logs:*"]
+      Resource = "*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["rds:*"]
+        Resource = "*"
+    }]
+  })
+}
+
+resource "aws_iam_instance_profile" "webserver" {
+  name_prefix = "${var.namespace}-webserver-profile-"
+  role        = aws_iam_role.webserver.name
+
+  tags = {
+    Name = "${var.namespace}-webserver-profile"
+  }
 }
 
 // this feeds user_data into aws_launch_template below
@@ -31,7 +75,7 @@ resource "aws_launch_template" "webserver" {
   user_data     = data.cloudinit_config.config.rendered
   key_name      = var.ssh_keypair
   iam_instance_profile {
-    name = module.iam_instance_profile.name
+    name = aws_iam_instance_profile.webserver.name
   }
   vpc_security_group_ids = [var.sg.websvr]
 }
