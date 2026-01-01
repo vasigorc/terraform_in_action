@@ -8,7 +8,7 @@ resource "aws_db_instance" "name" {
   instance_class         = "db.t2.micro"
   allocated_storage      = 10
   engine                 = "mysql"
-  engine_version         = "8.0"
+  engine_version         = "8.4"
   identifier             = "${var.namespace}-db-instance"
   db_name                = "pets"
   username               = "admin"

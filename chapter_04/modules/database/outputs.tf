@@ -4,6 +4,6 @@ output "db_config" {
     password = aws_db_instance.database.password
     database = aws_db_instance.database.name
     hostname = aws_db_instance.database.address
-    user     = aws_db_instance.database.port
+    port     = aws_db_instance.database.port
   }
 }
