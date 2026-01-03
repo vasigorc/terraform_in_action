@@ -1,9 +1,25 @@
-# Ignore Terraform state and provider info
+# Terraform state and working directory
 .terraform/
-terraform.tfstate
-terraform.tfstate.backup
-
-madlibs
-madlibs.zip
-
+*.tfstate
+*.tfstate.*
 *.tfplan
+
+# Terraform provider cache (registry.terraform.io)
+**/.terraform/providers/
+**/.terraform/registry.terraform.io/
+
+# Lambda/serverless build artifacts
+dist/
+*.zip
+
+# Node.js dependencies
+**/node_modules/
+
+# OS and editor files
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Chapter-specific artifacts
+madlibs

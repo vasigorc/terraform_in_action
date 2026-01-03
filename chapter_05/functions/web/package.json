@@ -1,0 +1,13 @@
+{
+  "name": "ballroom-web",
+  "version": "1.0.0",
+  "description": "Static file server for ballroom frontend",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"No tests yet\""
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

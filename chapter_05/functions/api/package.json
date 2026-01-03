@@ -1,0 +1,17 @@
+{
+  "name": "ballroom-api",
+  "version": "1.0.0",
+  "description": "Tweets CRUD API using DynamoDB",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"No tests yet\""
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.709.0",
+    "@aws-sdk/lib-dynamodb": "^3.709.0",
+    "uuid": "^11.0.3"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
