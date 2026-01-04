@@ -25,7 +25,7 @@ locals {
 }
 
 resource "aws_s3_bucket" "lambda_packages" {
-  bucket = "${local.namespace}-lambda_packages"
+  bucket = "${local.namespace}-lambda-packages"
   tags   = local.common_tags
 }
 
