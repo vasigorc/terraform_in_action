@@ -1,25 +1,55 @@
-﻿var fs = require('fs');
-var path = require('path')
+const fs = require('fs');
+const path = require('path');
 
-//A simple "serverless" function for serving static content
-module.exports = async function (context, req) {
-    let file = context.req.params.file ? context.req.params.file : "index.html"
-    let ext = file.split(".").pop()
-    if(["html","css","js"].includes(ext)){
-        contentType = `text/${ext}`
-        body = fs.readFileSync(path.resolve(__dirname,`./public/${file}`),{encoding:'utf-8'})
-        context.res = {
-            headers: {"Content-Type":contentType},
-            body: body
-        };
-    } else {
-        let bitmap = fs.readFileSync(path.resolve(__dirname,`./public/${file}`))
-        let data = new Buffer(bitmap)
-        contentType = `image/${ext}`
-        context.res = {
-            headers: {"Content-Type": contentType},
-            body: new Uint8Array(data),
-            isRaw: true
+// Lambda handler for serving static files
+exports.handler = async (event) => {
+    try {
+        // Parse file path: / → index.html, /styles.css → styles.css
+        let file = 'index.html';
+        if (event.rawPath && event.rawPath !== '/') {
+            file = event.rawPath.substring(1); // Remove leading /
         }
+
+        const ext = file.split('.').pop();
+        const filePath = path.resolve(__dirname, `./public/${file}`);
+
+        // Check if file exists
+        if (!fs.existsSync(filePath)) {
+            return {
+                statusCode: 404,
+                headers: { 'Content-Type': 'text/plain' },
+                body: 'File not found'
+            };
+        }
+
+        // Serve text files (HTML, CSS, JS)
+        if (['html', 'css', 'js'].includes(ext)) {
+            const contentType = `text/${ext === 'js' ? 'javascript' : ext}`;
+            const body = fs.readFileSync(filePath, { encoding: 'utf-8' });
+
+            return {
+                statusCode: 200,
+                headers: { 'Content-Type': contentType },
+                body: body
+            };
+        }
+
+        // Serve binary files (images, etc.)
+        const bitmap = fs.readFileSync(filePath);
+        const contentType = `image/${ext}`;
+
+        return {
+            statusCode: 200,
+            headers: { 'Content-Type': contentType },
+            body: bitmap.toString('base64'),
+            isBase64Encoded: true
+        };
+    } catch (error) {
+        console.error('Error serving file:', error);
+        return {
+            statusCode: 500,
+            headers: { 'Content-Type': 'text/plain' },
+            body: 'Internal server error'
+        };
     }
 };

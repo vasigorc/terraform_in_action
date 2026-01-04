@@ -1,152 +1,232 @@
-var azure = require('azure-storage');
-var entGen = azure.TableUtilities.entityGenerator;
-var tableService = azure.createTableService(process.env.TABLES_CONNECTION_STRING);
-const tableName = "tweets"
-const uuidv4 = require('uuid/v4')
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, PutCommand, GetCommand, ScanCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
+const { v4: uuidv4 } = require('uuid');
 
-// using table storage as a kind of "serverless" NoSQL database
-module.exports = function (context, req) {
-    if (req.params.action === "tweet") {
-        handleTweet(context)
-    } else {
-        context.res = {
-            status: 404
+// Initialize DynamoDB client
+const client = new DynamoDBClient({});
+const docClient = DynamoDBDocumentClient.from(client);
+const tableName = process.env.DYNAMODB_TABLE;
+
+// Log initialization (helps debug env var issues)
+console.log('DynamoDB client initialized');
+console.log('Table name:', tableName || 'NOT SET - CHECK ENVIRONMENT VARIABLES!');
+console.log('AWS Region:', process.env.AWS_REGION || 'default');
+
+// Lambda handler (replaces Azure Function context)
+exports.handler = async (event) => {
+    // Log incoming request
+    console.log('Request:', {
+        method: event.requestContext?.http?.method,
+        path: event.rawPath,
+        query: event.queryStringParameters
+    });
+
+    try {
+        // Parse path: /api/tweet or /api/tweet/{id}
+        const pathParts = event.rawPath.split('/').filter(p => p);
+        const action = pathParts[1]; // 'tweet'
+        const id = pathParts[2];     // uuid (optional)
+
+        if (action === 'tweet') {
+            return await handleTweet(event, id);
+        } else {
+            return {
+                statusCode: 404,
+                body: JSON.stringify({ error: 'Not found' })
+            };
         }
+    } catch (error) {
+        console.error('Error:', error);
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ error: 'Internal server error' })
+        };
     }
 };
 
-async function handleTweet(context) {
-    tableService.createTableIfNotExists(tableName, function (error, result, response) {
-        if (!error) {
-            switch (context.req.method) {
-                case "POST":
-                    createTweet(context)
-                    break
-                case "GET":
-                    readTweet(context)
-                    break
-                case "PATCH":
-                    updateTweet(context)
-                    break
-                case "DELETE":
-                    deleteTweet(context)
-                    break
-            }
-        }
-    });
-}
+async function handleTweet(event, id) {
+    const method = event.requestContext.http.method;
 
-function createTweet(context) {
-    let message = context.req.body.message
-    let name = context.req.body.name
-    let entity = {
-        PartitionKey: entGen.String(name),
-        RowKey: entGen.String(uuidv4()),
-        message: entGen.String(message),
-    };
-    tableService.insertEntity(tableName, entity, function (error, result, response) {
-        if (!error) {
-            context.res = {
-                status: 201
-            }
-        } else {
-            context.log(error)
-            context.res = {
-                status: 400
-            }
-        }
-        context.done()
-    });
-}
-
-function transformTweet(record) {
-    return {
-        uuid: record.RowKey._,
-        name: record.PartitionKey._,
-        message: record.message._,
-        timestamp: record.Timestamp._
+    switch (method) {
+        case 'POST':
+            return await createTweet(event);
+        case 'GET':
+            return await readTweet(event, id);
+        case 'PATCH':
+            return await updateTweet(event, id);
+        case 'DELETE':
+            return await deleteTweet(event, id);
+        default:
+            return {
+                statusCode: 405,
+                body: JSON.stringify({ error: 'Method not allowed' })
+            };
     }
 }
 
-function readTweet(context) {
-    let uuid = context.req.params.id
-    let list = uuid === undefined
-    if (list) {
-        tableService.queryEntities(tableName, null, null, function (error, result) {
-            if (!error) {
-                let tweets = result.entries.map(function(e){return transformTweet(e)})
-                context.res = {
-                    headers: {"Content-Type":"text/json"},
-                    status: 200,
-                    body: JSON.stringify(tweets)
-                }
-            } else {
-                context.res = {
-                    status: 500
-                }
-            }
-            context.done()
-            return
-        })
-    } else{
-        let name = context.req.query.name
-        tableService.retrieveEntity(tableName, name, uuid, function (error, result, response) {
-            if (!error) {
-                let tweet = transformTweet(result)
-                context.res = {
-                    headers: {"Content-Type":"text/json"},
-                    status: 200,
-                    body: JSON.stringify(tweet)
-                }
-            } else {
-                context.res = {
-                    status: 404
-                }
-            }
-            context.done()
-        });
+async function createTweet(event) {
+    try {
+        const body = JSON.parse(event.body || '{}');
+        const { name, message } = body;
+
+        if (!name || !message) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ error: 'Name and message required' })
+            };
+        }
+
+        const item = {
+            name: name,           // Partition key
+            uuid: uuidv4(),       // Sort key
+            message: message,
+            timestamp: new Date().toISOString()
+        };
+
+        console.log('Creating tweet in table:', tableName, 'Item:', item);
+
+        await docClient.send(new PutCommand({
+            TableName: tableName,
+            Item: item
+        }));
+
+        console.log('Tweet created successfully:', item.uuid);
+
+        return {
+            statusCode: 201,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(item)
+        };
+    } catch (error) {
+        console.error('Create error:', error);
+        return {
+            statusCode: 400,
+            body: JSON.stringify({ error: error.message })
+        };
     }
-
 }
 
-function updateTweet(context) {
-    let uuid = context.req.params.id
-    let entity = {
-        PartitionKey: entGen.String(context.req.body.name),
-        RowKey: entGen.String(context.req.body.uuid),
-        message: entGen.String(context.req.body.message)
-    };
-    tableService.insertOrReplaceEntity(tableName, entity, function (error, result, response) {
-        if (!error) {
-            context.res = {
-                status: 202
-            }
-        } else {
-            context.res = {
-                status: 400
-            }
+async function readTweet(event, uuid) {
+    try {
+        // If no uuid provided, list all tweets
+        if (!uuid) {
+            console.log('Scanning all tweets from table:', tableName);
+
+            const result = await docClient.send(new ScanCommand({
+                TableName: tableName
+            }));
+
+            console.log('Scan result: found', result.Items?.length || 0, 'tweets');
+
+            return {
+                statusCode: 200,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(result.Items || [])
+            };
         }
-        context.done()
-    });
+
+        // Get specific tweet by name and uuid
+        const name = event.queryStringParameters?.name;
+        if (!name) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ error: 'Name query parameter required' })
+            };
+        }
+
+        console.log('Getting tweet:', { tableName, name, uuid });
+
+        const result = await docClient.send(new GetCommand({
+            TableName: tableName,
+            Key: { name, uuid }
+        }));
+
+        console.log('Get result:', result.Item ? 'found' : 'not found');
+
+        if (!result.Item) {
+            return {
+                statusCode: 404,
+                body: JSON.stringify({ error: 'Tweet not found' })
+            };
+        }
+
+        return {
+            statusCode: 200,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(result.Item)
+        };
+    } catch (error) {
+        console.error('Read error:', error);
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ error: error.message })
+        };
+    }
 }
 
-function deleteTweet(context) {
-    let uuid = context.req.params.id
-    let name = context.req.query.name
-    var entity = {
-        PartitionKey: entGen.String(name),
-        RowKey: entGen.String(uuid),
-    };
-    tableService.deleteEntity(tableName, entity, function (error, result, response) {
-        if (!error) {
-            context.res = {
-                status: 202
-            }
-        } else {
-            context.res = {
-                status: 404
-            }
+async function updateTweet(event, uuid) {
+    try {
+        const body = JSON.parse(event.body || '{}');
+        const { name, message } = body;
+
+        if (!name || !uuid || !message) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ error: 'Name, uuid, and message required' })
+            };
         }
-        context.done()
-    });
+
+        const item = {
+            name: name,
+            uuid: uuid,
+            message: message,
+            timestamp: new Date().toISOString()
+        };
+
+        await docClient.send(new PutCommand({
+            TableName: tableName,
+            Item: item
+        }));
+
+        return {
+            statusCode: 202,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(item)
+        };
+    } catch (error) {
+        console.error('Update error:', error);
+        return {
+            statusCode: 400,
+            body: JSON.stringify({ error: error.message })
+        };
+    }
+}
+
+async function deleteTweet(event, uuid) {
+    try {
+        const name = event.queryStringParameters?.name;
+
+        if (!name || !uuid) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ error: 'Name and uuid required' })
+            };
+        }
+
+        await docClient.send(new DeleteCommand({
+            TableName: tableName,
+            Key: { name, uuid }
+        }));
+
+        return {
+            statusCode: 202,
+            body: JSON.stringify({ message: 'Tweet deleted' })
+        };
+    } catch (error) {
+        console.error('Delete error:', error);
+        return {
+            statusCode: 404,
+            body: JSON.stringify({ error: 'Tweet not found' })
+        };
+    }
 }
