@@ -1,5 +1,4 @@
 resource "random_string" "rand" {
-  # TODO: random resource version missing
   length  = 24
   special = false
   upper   = false
@@ -31,12 +30,10 @@ resource "aws_s3_object" "api_package" {
   bucket = aws_s3_bucket.lambda_packages.id
   key    = "api.zip"
   source = data.archive_file.api_function.output_path
-  # TODO: What is etag?
-  etag = filemd5(data.archive_file.api_function.output_path)
+  etag   = filemd5(data.archive_file.api_function.output_path)
 }
 
 data "archive_file" "web_function" {
-  # TODO: Missing version constraint
   type        = "zip"
   source_dir  = "${path.module}/functions/web"
   output_path = "${path.module}/dist/web.zip"
@@ -46,6 +43,24 @@ resource "aws_s3_object" "web_package" {
   bucket = aws_s3_bucket.lambda_packages.id
   key    = "web.zip"
   source = data.archive_file.web_function.output_path
-  # TODO: Explore what etag is
-  etag = filemd5(data.archive_file.web_function.output_path)
+  etag   = filemd5(data.archive_file.web_function.output_path)
+}
+
+resource "aws_dynamodb_table" "tweets" {
+  name         = "${local.namespace}-tweets"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "name"
+  range_key    = "uuid"
+
+  attribute {
+    name = "name"
+    type = "S"
+  }
+
+  attribute {
+    name = "uuid"
+    type = "S"
+  }
+
+  tags = local.common_tags
 }

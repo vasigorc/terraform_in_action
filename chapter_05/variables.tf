@@ -1,5 +1,5 @@
 variable "namespace" {
-  description = "The project namespace to ue for unique resource naming"
+  description = "The project namespace to use for unique resource naming"
   type        = string
 }
 
