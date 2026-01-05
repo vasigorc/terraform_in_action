@@ -5,9 +5,10 @@ adapted from the book's Azure Functions example.
 
 ## Demo
 
-[ballroom.webm](./images/ballroom.webm)
+![Ballroom Application](images/ballroom_2.png)
 
-**Live application:** API Gateway → Lambda (Web + API) → DynamoDB
+**Live application:** Full-stack serverless Twitter-like app with API Gateway,
+Lambda functions, and DynamoDB backend.
 
 ## Architecture
 

@@ -8,9 +8,9 @@ This repository contains hands-on exercises and examples from the book "Terrafor
 
 **Current Status:**
 
-- ✅ Chapters 1-4: Completed (workflow, resources, state, modules)
-- 🔄 Chapter 5: Next (managing multiple environments)
-- 📚 Chapters 6+: Upcoming (remote state, testing, team workflows)
+- ✅ Chapters 1-5: Completed (workflow, resources, state, modules, serverless)
+- 🔄 Chapter 6: Next (remote state and backends)
+- 📚 Chapters 7+: Upcoming (team workflows, testing, advanced patterns)
 
 ## Remarks on Differences from Book
 
