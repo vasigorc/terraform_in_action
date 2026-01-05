@@ -213,10 +213,17 @@ resource "aws_apigatewayv2_route" "api" {
   target    = "integrations/${aws_apigatewayv2_integration.api.id}"
 }
 
-# Route: /{proxy+} -> Web Lambda (static files)
+# Route: / -> Web Lambda (root/index.html)
 resource "aws_apigatewayv2_route" "web_root" {
   api_id    = aws_apigatewayv2_api.ballroom.id
   route_key = "GET /"
+  target    = "integrations/${aws_apigatewayv2_integration.web.id}"
+}
+
+# Route: /{proxy+} -> Web Lambda (static files: CSS, JS, images)
+resource "aws_apigatewayv2_route" "web_proxy" {
+  api_id    = aws_apigatewayv2_api.ballroom.id
+  route_key = "GET /{proxy+}"
   target    = "integrations/${aws_apigatewayv2_integration.web.id}"
 }
 
