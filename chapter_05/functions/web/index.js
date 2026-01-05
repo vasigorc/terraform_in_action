@@ -3,6 +3,8 @@ const path = require('path');
 
 // Lambda handler for serving static files
 exports.handler = async (event) => {
+    console.log('Web request:', event.rawPath);
+
     try {
         // Parse file path: / → index.html, /styles.css → styles.css
         let file = 'index.html';
@@ -12,6 +14,9 @@ exports.handler = async (event) => {
 
         const ext = file.split('.').pop();
         const filePath = path.resolve(__dirname, `./public/${file}`);
+
+        console.log('Serving file:', file, 'from path:', filePath);
+        console.log('File exists:', fs.existsSync(filePath));
 
         // Check if file exists
         if (!fs.existsSync(filePath)) {
