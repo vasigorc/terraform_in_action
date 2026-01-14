@@ -157,30 +157,49 @@ chapter_06/
     └── config.yml               # Stack configuration as code
 ```
 
+## Critical Distinction: What Runs Where
+
+**backend-bootstrap: Run LOCALLY (not Spacelift)**
+- Creates the S3 bucket for state storage
+- Uses LOCAL state file (chicken-egg problem)
+- Run ONCE manually with `terraform apply`
+- Committed to git (exception to "never commit state" rule)
+- Why: Spacelift needs the bucket to exist before it can use it
+
+**workspaces/dev & workspaces/prod: Run via SPACELIFT**
+- Use REMOTE state in the S3 bucket created above
+- Managed by Spacelift Stacks
+- PR → plan, merge → manual confirm → apply
+- This is where the PR-driven workflow happens
+- Why: Real infrastructure with proper state management
+
 ## Implementation Steps
 
-### Phase 1: Bootstrap S3 Backend
+### Phase 1: Bootstrap S3 Backend (RUN LOCALLY)
 1. Create S3 bucket for state storage (using local state)
-2. Enable versioning and encryption
-3. Output bucket details for workspace configuration
+2. Run `terraform apply` from your machine (NOT Spacelift)
+3. Commit the resulting `terraform.tfstate` file to git
+4. Output bucket details for workspace configuration
 
-### Phase 2: Create Workspaces
-1. Dev workspace with simple infrastructure (e.g., S3 bucket or EC2)
-2. Prod workspace with similar infrastructure
-3. Each configured to use remote S3 backend with different state keys
+### Phase 2: Create Workspaces (CODE ONLY - Don't Apply)
+1. Create dev workspace Terraform code (simple infrastructure)
+2. Create prod workspace Terraform code (similar infrastructure)
+3. Configure each to use remote S3 backend with different state keys
+4. Push to GitHub branch (don't run terraform apply locally)
 
-### Phase 3: Spacelift Setup
-1. Connect GitHub repository to Spacelift
-2. Create Stack for dev workspace
-3. Create Stack for prod workspace
-4. Configure triggers (PR-based or push-based)
+### Phase 3: Spacelift Setup (SPACELIFT RUNS THE CODE)
+1. Connect GitHub repository to Spacelift (already done)
+2. Create Stack for dev workspace (points to workspaces/dev/)
+3. Create Stack for prod workspace (points to workspaces/prod/)
+4. Configure triggers (PR-based plan, manual apply)
 
-### Phase 4: Test Workflow
+### Phase 4: Test Workflow (PR-DRIVEN)
 1. Make change to dev workspace via PR
-2. Observe Spacelift plan result
-3. Merge PR and observe apply
-4. Make change to prod workspace
-5. Verify state isolation between workspaces
+2. Spacelift automatically runs plan, posts results to PR
+3. Merge PR after reviewing plan
+4. Manually confirm apply in Spacelift UI
+5. Repeat for prod workspace
+6. Verify state isolation between workspaces
 
 ## Key Concepts from Chapter 6 (Still Apply)
 
