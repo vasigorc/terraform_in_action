@@ -23,3 +23,6 @@ dist/
 
 # Chapter-specific artifacts
 madlibs
+
+# Used mostly for local downloads and debugging
+spacelift_logs/
