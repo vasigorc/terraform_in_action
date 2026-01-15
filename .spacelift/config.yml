@@ -3,8 +3,8 @@ version: "1"
 stacks:
   terraform-in-action-dev:
     project_root: "chapter_06/workspaces/dev"
-    terraform_version: "1.12.0"
+    terraform_version: "1.5.7"
 
   terraform-in-action-prod:
     project_root: "chapter_06/workspaces/prod"
-    terraform_version: "1.12.0"
+    terraform_version: "1.5.7"
