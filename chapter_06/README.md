@@ -167,6 +167,34 @@ chapter_06/
 - Replicable across environments
 - Production-grade pattern
 
+### Manual Confirmation (Safety Feature)
+
+By default, Spacelift requires **manual confirmation** before applying changes:
+
+```
+PR Merged → Plan runs automatically → "Unconfirmed" state → Human clicks "Confirm" → Apply runs
+```
+
+This prevents accidental infrastructure changes. After merging a PR, you'll see:
+
+- Stack status: **Unconfirmed**
+- Buttons: **Confirm** / **Discard**
+
+Click **Confirm** to proceed with `terraform apply`, or **Discard** to reject the changes.
+
+**To enable auto-apply** (skip manual confirmation):
+
+```yaml
+# .spacelift/config.yml
+stacks:
+  terraform-in-action-dev:
+    project_root: "chapter_06/workspaces/dev"
+    terraform_version: "1.5.7"
+    autodeploy: true  # Auto-apply after successful plan
+```
+
+**Recommendation:** Keep manual confirmation for production stacks, enable auto-apply only for dev/ephemeral environments.
+
 ## Critical Distinction: What Runs Where
 
 **backend-bootstrap: Run LOCALLY (not Spacelift)**
@@ -280,6 +308,8 @@ This mirrors patterns you've seen in Akka, Erlang/OTP, and message queue systems
 
 After fixing the provider configuration:
 
+**Plan phase:**
+
 ```
 Initializing the backend...
 Successfully configured the backend "s3"!
@@ -292,3 +322,36 @@ Terraform has been successfully initialized!
 
 Plan: 1 to add, 0 to change, 0 to destroy.
 ```
+
+**Apply phase (after clicking Confirm):**
+
+```
+Applying changes...
+aws_s3_bucket.prod_bucket: Creating...
+aws_s3_bucket.prod_bucket: Creation complete after 1s [id=prod-example-20260115232510259900000001]
+
+Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
+
+Changes applied successfully
+Uploading the list of managed resources...
+Resource list upload is GO
+```
+
+**Both stacks successfully deployed:**
+
+![Spacelift Stacks Successfully Deployed](images/sl_stacks_successfully_deployed.png)
+
+Both `terraform-in-action-dev` and `terraform-in-action-prod` stacks show **FINISHED** status, each managing their respective S3 bucket with isolated state files.
+
+**GitHub Deployments Integration:**
+
+![GitHub Deployments](images/gh_deployments.png)
+
+Spacelift registers deployments with GitHub's Deployments API, providing visibility directly in the repository. This completes the **GitOps Infrastructure CD** loop:
+
+1. **Git as source of truth** → Infrastructure defined in code
+2. **PR-triggered plans** → Preview changes before merge
+3. **Merge triggers deployment** → Spacelift applies changes
+4. **GitHub tracks deployments** → Full audit trail in repository
+
+This is true Infrastructure Continuous Deployment - code changes flow automatically from PR → merge → deploy, with the repository serving as the single source of truth for both application and infrastructure state.
