@@ -109,25 +109,6 @@ For developers familiar with Akka or message-passing systems:
 | **Policy Enforcement** | External tools            | Built-in policies (OPA, Sentinel)    |
 | **CLI Workflow**       | Direct `terraform`        | Via Spacelift API or UI              |
 
-## When to Use Each Approach
-
-### Use DynamoDB Locking When
-
-- You want minimal external dependencies
-- Team uses direct `terraform` CLI workflow
-- You're on a tight budget (AWS credits, free tier S3/DynamoDB)
-- You don't need advanced workflow features
-- You prefer simplicity over features
-
-### Use Spacelift (or similar) When
-
-- You want PR-driven workflows
-- You need policy-as-code enforcement
-- You want built-in audit trails
-- You need role-based access control (RBAC)
-- You're managing multiple teams/environments
-- You want to avoid distributed locking complexity
-
 ### Other Options
 
 - **Terraform Cloud:** HashiCorp's managed offering (similar to Spacelift)
@@ -162,13 +143,9 @@ chapter_06/
     └── config.yml               # Stack configuration as code
 ```
 
-## Spacelift Configuration (GitOps)
-
-This chapter uses **GitOps** to manage Spacelift Stacks via code rather than UI configuration.
+## Spacelift Configuration
 
 **Location:** `/.spacelift/config.yml` (repository root, not chapter_06/)
-
-**Why repository root:** Spacelift requires `.spacelift/config.yml` at the repo root to discover stack configurations.
 
 **Configured stacks:**
 
@@ -240,7 +217,7 @@ This chapter uses **GitOps** to manage Spacelift Stacks via code rather than UI 
 5. Repeat for prod workspace
 6. Verify state isolation between workspaces
 
-## Key Concepts from Chapter 6 (Still Apply)
+## Key Concepts from Chapter 6
 
 Even though we're using Spacelift, these concepts from the book remain important:
 
@@ -271,17 +248,6 @@ Even though we're using Spacelift, these concepts from the book remain important
 
 **Total:** < $5/month, free if cleaned up daily
 
-## Success Criteria
-
-By the end of this chapter, you'll understand:
-
-- ✅ Remote state storage with S3
-- ✅ State isolation between environments
-- ✅ Team collaboration patterns
-- ✅ Queue-based vs lock-based concurrency control
-- ✅ PR-driven infrastructure workflows
-- ✅ The trade-offs between different backend approaches
-
 ## Distributed Systems Perspective
 
 From a distributed systems lens, this chapter explores:
@@ -310,13 +276,19 @@ From a distributed systems lens, this chapter explores:
 
 This mirrors patterns you've seen in Akka, Erlang/OTP, and message queue systems.
 
-## References
+### Successful Spacelift Run
 
-- [Terraform in Action](https://www.manning.com/books/terraform-in-action) - Chapter 6
-- [Spacelift Documentation](https://docs.spacelift.io/)
-- [Terraform Backend: S3](https://developer.hashicorp.com/terraform/language/settings/backends/s3)
-- [Actor Model](https://en.wikipedia.org/wiki/Actor_model)
+After fixing the provider configuration:
 
----
+```
+Initializing the backend...
+Successfully configured the backend "s3"!
 
-**Next Steps:** Proceed to `backend-bootstrap/` to create the S3 bucket for state storage.
+Initializing provider plugins...
+- Installing hashicorp/aws v5.100.0...
+- Installed hashicorp/aws v5.100.0 (signed by HashiCorp)
+
+Terraform has been successfully initialized!
+
+Plan: 1 to add, 0 to change, 0 to destroy.
+```
