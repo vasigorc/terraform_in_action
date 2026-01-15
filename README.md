@@ -9,8 +9,10 @@ This repository contains hands-on exercises and examples from the book "Terrafor
 **Current Status:**
 
 - ✅ Chapters 1-5: Completed (workflow, resources, state, modules, serverless)
-- 🔄 Chapter 6: Next (remote state and backends)
-- 📚 Chapters 7+: Upcoming (team workflows, testing, advanced patterns)
+- ✅ Chapter 6: Completed (team workflows, remote state, Spacelift GitOps CD)
+- 📚 Chapter 7: Upcoming (CI/CD pipelines as code)
+- ⏭️ Chapter 8: Skipped (multi-cloud MMORPG - see AWS-only decision below)
+- 📚 Chapter 9: Upcoming (zero-downtime deployments)
 
 ## Remarks on Differences from Book
 
