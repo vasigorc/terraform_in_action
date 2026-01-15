@@ -33,6 +33,7 @@ This chapter explores Terraform team collaboration patterns and remote state man
 ```
 
 **Characteristics:**
+
 - **CP model** (Consistency + Partition tolerance)
 - Distributed locking with lock contention
 - Blocks concurrent operations on same workspace
@@ -72,6 +73,7 @@ This chapter explores Terraform team collaboration patterns and remote state man
 ```
 
 **Characteristics:**
+
 - **AP model** (Availability + Partition tolerance with eventual consistency)
 - Queue-based execution (actor mailbox pattern)
 - No distributed locks needed
@@ -82,41 +84,43 @@ This chapter explores Terraform team collaboration patterns and remote state man
 
 For developers familiar with Akka or message-passing systems:
 
-| Actor Model Concept | Spacelift Equivalent |
-|---------------------|----------------------|
-| Actor               | Stack (workspace)    |
-| Mailbox             | Run queue            |
-| Message             | Terraform run (plan/apply) |
-| Supervisor          | Spacelift orchestrator |
-| Sequential processing | Runs execute one at a time per Stack |
-| Parallel actors     | Multiple Stacks can run simultaneously |
+| Actor Model Concept   | Spacelift Equivalent                   |
+| --------------------- | -------------------------------------- |
+| Actor                 | Stack (workspace)                      |
+| Mailbox               | Run queue                              |
+| Message               | Terraform run (plan/apply)             |
+| Supervisor            | Spacelift orchestrator                 |
+| Sequential processing | Runs execute one at a time per Stack   |
+| Parallel actors       | Multiple Stacks can run simultaneously |
 
 **Key insight:** Each Stack is an actor with a mailbox (run queue). Commands are enqueued and processed sequentially. No locks needed because there's a single writer per Stack.
 
 ## Trade-Offs
 
-| Aspect | DynamoDB Locking | Spacelift |
-|--------|------------------|-----------|
-| **Cost** | ~$0.50/month (DynamoDB) | Free tier: 2 users, unlimited Stacks |
-| **Setup Complexity** | Low (1 table + S3 bucket) | Medium (GitHub app, account setup) |
-| **Lock Contention** | Yes (explicit locks) | No (queue-based) |
-| **Orphaned Locks** | Possible (manual unlock) | Not applicable |
-| **Concurrent Applies** | Blocked by lock | Queued, execute sequentially |
-| **PR Integration** | Manual (or custom CI) | Built-in (plan on PR) |
-| **Audit Trail** | CloudTrail logs | Built-in run history |
-| **Policy Enforcement** | External tools | Built-in policies (OPA, Sentinel) |
-| **CLI Workflow** | Direct `terraform` | Via Spacelift API or UI |
+| Aspect                 | DynamoDB Locking          | Spacelift                            |
+| ---------------------- | ------------------------- | ------------------------------------ |
+| **Cost**               | ~$0.50/month (DynamoDB)   | Free tier: 2 users, unlimited Stacks |
+| **Setup Complexity**   | Low (1 table + S3 bucket) | Medium (GitHub app, account setup)   |
+| **Lock Contention**    | Yes (explicit locks)      | No (queue-based)                     |
+| **Orphaned Locks**     | Possible (manual unlock)  | Not applicable                       |
+| **Concurrent Applies** | Blocked by lock           | Queued, execute sequentially         |
+| **PR Integration**     | Manual (or custom CI)     | Built-in (plan on PR)                |
+| **Audit Trail**        | CloudTrail logs           | Built-in run history                 |
+| **Policy Enforcement** | External tools            | Built-in policies (OPA, Sentinel)    |
+| **CLI Workflow**       | Direct `terraform`        | Via Spacelift API or UI              |
 
 ## When to Use Each Approach
 
-### Use DynamoDB Locking When:
+### Use DynamoDB Locking When
+
 - You want minimal external dependencies
 - Team uses direct `terraform` CLI workflow
 - You're on a tight budget (AWS credits, free tier S3/DynamoDB)
 - You don't need advanced workflow features
 - You prefer simplicity over features
 
-### Use Spacelift (or similar) When:
+### Use Spacelift (or similar) When
+
 - You want PR-driven workflows
 - You need policy-as-code enforcement
 - You want built-in audit trails
@@ -125,6 +129,7 @@ For developers familiar with Akka or message-passing systems:
 - You want to avoid distributed locking complexity
 
 ### Other Options
+
 - **Terraform Cloud:** HashiCorp's managed offering (similar to Spacelift)
 - **Atlantis:** Self-hosted PR automation (middle ground)
 - **GitLab/GitHub CI + S3/DynamoDB:** DIY approach
@@ -157,9 +162,38 @@ chapter_06/
     └── config.yml               # Stack configuration as code
 ```
 
+## Spacelift Configuration (GitOps)
+
+This chapter uses **GitOps** to manage Spacelift Stacks via code rather than UI configuration.
+
+**Location:** `/.spacelift/config.yml` (repository root, not chapter_06/)
+
+**Why repository root:** Spacelift requires `.spacelift/config.yml` at the repo root to discover stack configurations.
+
+**Configured stacks:**
+
+- `terraform-in-action-dev` → points to `chapter_06/workspaces/dev/`
+- `terraform-in-action-prod` → points to `chapter_06/workspaces/prod/`
+
+**How it works:**
+
+1. Merge PR to `main` with `.spacelift/config.yml`
+2. Spacelift detects config and auto-creates stacks
+3. Future PRs affecting `chapter_06/workspaces/*` trigger plans on respective stacks
+4. Merge PR → manual confirm in Spacelift UI → apply
+
+**Benefits of GitOps approach:**
+
+- Stack configuration is version controlled
+- Changes visible in PRs (infrastructure-as-code for CI/CD)
+- Auditable via git history
+- Replicable across environments
+- Production-grade pattern
+
 ## Critical Distinction: What Runs Where
 
 **backend-bootstrap: Run LOCALLY (not Spacelift)**
+
 - Creates the S3 bucket for state storage
 - Uses LOCAL state file (chicken-egg problem)
 - Run ONCE manually with `terraform apply`
@@ -167,6 +201,7 @@ chapter_06/
 - Why: Spacelift needs the bucket to exist before it can use it
 
 **workspaces/dev & workspaces/prod: Run via SPACELIFT**
+
 - Use REMOTE state in the S3 bucket created above
 - Managed by Spacelift Stacks
 - PR → plan, merge → manual confirm → apply
@@ -176,24 +211,28 @@ chapter_06/
 ## Implementation Steps
 
 ### Phase 1: Bootstrap S3 Backend (RUN LOCALLY)
+
 1. Create S3 bucket for state storage (using local state)
 2. Run `terraform apply` from your machine (NOT Spacelift)
 3. Commit the resulting `terraform.tfstate` file to git
 4. Output bucket details for workspace configuration
 
 ### Phase 2: Create Workspaces (CODE ONLY - Don't Apply)
+
 1. Create dev workspace Terraform code (simple infrastructure)
 2. Create prod workspace Terraform code (similar infrastructure)
 3. Configure each to use remote S3 backend with different state keys
 4. Push to GitHub branch (don't run terraform apply locally)
 
 ### Phase 3: Spacelift Setup (SPACELIFT RUNS THE CODE)
+
 1. Connect GitHub repository to Spacelift (already done)
 2. Create Stack for dev workspace (points to workspaces/dev/)
 3. Create Stack for prod workspace (points to workspaces/prod/)
 4. Configure triggers (PR-based plan, manual apply)
 
 ### Phase 4: Test Workflow (PR-DRIVEN)
+
 1. Make change to dev workspace via PR
 2. Spacelift automatically runs plan, posts results to PR
 3. Merge PR after reviewing plan
@@ -214,15 +253,18 @@ Even though we're using Spacelift, these concepts from the book remain important
 ## Cost Considerations
 
 **S3 State Storage:**
+
 - State files are tiny (few KB to few MB)
 - S3 free tier: 5GB storage, 20,000 GET requests/month
 - **Estimated cost:** < $0.10/month for state storage
 
 **Spacelift:**
+
 - Free tier: 2 users, unlimited Stacks, 500 tracked resources
 - **Estimated cost:** $0 for this learning exercise
 
 **Infrastructure Resources (dev/prod):**
+
 - Using minimal resources (t3.micro, small S3 buckets)
 - **Estimated cost:** < $5/month if left running
 - **Strategy:** Destroy immediately after testing
@@ -232,6 +274,7 @@ Even though we're using Spacelift, these concepts from the book remain important
 ## Success Criteria
 
 By the end of this chapter, you'll understand:
+
 - ✅ Remote state storage with S3
 - ✅ State isolation between environments
 - ✅ Team collaboration patterns
@@ -244,18 +287,22 @@ By the end of this chapter, you'll understand:
 From a distributed systems lens, this chapter explores:
 
 **Concurrency Control:**
+
 - **Pessimistic (DynamoDB locks):** Assume conflicts, prevent concurrent writes
 - **Optimistic (Spacelift queues):** Assume no conflicts, serialize via single writer
 
 **Consistency Models:**
+
 - **DynamoDB approach:** Strong consistency via locking (CP system)
 - **Spacelift approach:** Eventual consistency with queue ordering (AP system)
 
 **Fault Tolerance:**
+
 - **DynamoDB:** Lock timeout + manual recovery
 - **Spacelift:** Automatic retry + run history
 
 **Actor Model:**
+
 - Each Stack = actor with mailbox
 - Messages = Terraform runs
 - Sequential processing per actor
